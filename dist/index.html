@@ -11,7 +11,21 @@
 <body>
   <script src="./vue.js"></script>
   <script>
-    console.log(Vue)
+    const vm = new Vue({
+      data: {
+        name: 'hzg',
+        age: 18,
+        address: {
+          street: '河南省',
+          city: '郑州市'
+        }
+      }
+    }) 
+    vm.name = "zby"
+    vm.address = {
+      city: '河南省',
+    }
+    console.log(vm)
   </script>
 </body>
 
