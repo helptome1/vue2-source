@@ -1,13 +1,22 @@
 class Observe {
   constructor(data) {
     // Object.defineProperty只能劫持已经存在的属性，不能劫持新增的属性（为此vue会新增一些方法例如：$set, $delete）
-    this.walk(data)
+    if (Array.isArray(data)) {
+      //  修改数组的每一项时进行修改，不管是基本数据类型，还是引用数据类型。
+      this.observeArray(data)
+    } else {
+      this.walk(data)
+    }
   }
   // 遍历对象，对每一个属性进行劫持
   walk(data) {
     Object.keys(data).forEach((key) => {
       defineReactive(data, key, data[key])
     })
+  }
+  // 遍历数组，对每一项进行劫持
+  observeArray(data) {
+    data.forEach((item) => observe(item))
   }
 }
 
@@ -19,13 +28,13 @@ export function defineReactive(target, key, val) {
   Object.defineProperty(target, key, {
     // 取值的时候
     get() {
-      console.log("用户取值了")
+      // console.log('用户取值了',key)
       return val
     },
     // 设置或者修改值时执行
     set(newVal) {
-      if(val !== newVal){
-        console.log("用户设置，修改了值")
+      if (val !== newVal) {
+        // console.log('用户设置，修改了值')
         // 对修改的对象属性进行劫持。
         observe(newVal)
         val = newVal
