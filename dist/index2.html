@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <script src="./vue.js"></script>
+    <script>
+      const vm = new Vue({
+        data: {
+          name: 'hzg',
+          age: 18,
+          address: {
+            street: '河南省',
+            city: '郑州市'
+          },
+          skills: ['html', 'css', 'js', { a: 1 }]
+        }
+      })
+      vm.name = 'zby'
+      vm.address = {
+        city: '河南省'
+      }
+      // 很少会用索引来修改数组，这样写，内部会造成大量的性能浪费。
+      // 而用户往往是通过方法来修改数组，例如push shift pop splice等方法。
+      vm.skills[1] = '111'
+      vm.skills[3].a
+      // console.log(vm)
+
+      function PrototypeDemo() {
+        this.name = 'hzg'
+        this.age = 18
+        this.function = function() {
+          console.log('function')
+        }
+      }
+      const vm2 = new PrototypeDemo()
+      console.log('vm2', vm2)
+      var obj = { a: 1 }
+      console.log(obj)
+      console.log('vm2__proto__', vm2.__proto__)
+      console.log('vm2prototype', vm2.prototype)
+      console.log(PrototypeDemo.prototype)
+    </script>
+  </body>
+</html>
