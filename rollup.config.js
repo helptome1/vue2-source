@@ -1,4 +1,5 @@
 import babel from '@rollup/plugin-babel'
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 // rollup默认导出一个对象，作为打包的配置文件
 export default {
   // 打包的入口文件
@@ -16,6 +17,7 @@ export default {
   plugins:[
     babel({
       exclude: "node_modules/**", //排除 node_modules 所有文件
-    })
+    }),
+    nodeResolve()
   ]
 }

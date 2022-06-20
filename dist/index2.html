@@ -8,6 +8,12 @@
   </head>
 
   <body>
+    <div id="app">
+      <div style="color:red">
+        {{name}}  hezg
+      </div>
+      <span>{{age}}</span>
+    </div>
     <script src="./vue.js"></script>
     <script>
       const vm = new Vue({
@@ -19,32 +25,18 @@
             city: '郑州市'
           },
           skills: ['html', 'css', 'js', { a: 1 }]
-        }
+        },
+        // el: '#app' //我们要将数据解析到el元素上
+        // template: `<div>template</div>`
       })
-      vm.name = 'zby'
-      vm.address = {
-        city: '河南省'
-      }
-      // 很少会用索引来修改数组，这样写，内部会造成大量的性能浪费。
-      // 而用户往往是通过方法来修改数组，例如push shift pop splice等方法。
-      vm.skills[1] = '111'
-      vm.skills[3].a
-      // console.log(vm)
+      vm.$mount('#app') //挂载到一个元素上
 
-      function PrototypeDemo() {
-        this.name = 'hzg'
-        this.age = 18
-        this.function = function() {
-          console.log('function')
-        }
-      }
-      const vm2 = new PrototypeDemo()
-      console.log('vm2', vm2)
-      var obj = { a: 1 }
-      console.log(obj)
-      console.log('vm2__proto__', vm2.__proto__)
-      console.log('vm2prototype', vm2.prototype)
-      console.log(PrototypeDemo.prototype)
+
+      // 1. 模板引擎 性能差 需要正则匹配替换，  1.0的时候，没有引入虚拟DOM
+      // 2. 采用虚拟dom，数据变化比较虚拟dom的差异，最后更新需要更新的地方。
+      // 3. 核心就是我们需要讲 模板变成我们js语法，通过js语法生成虚拟dom
+      // 从es6 -> es5；css压缩  我们需要先变成语法书在重新组装代码变成新的语法。
+
     </script>
   </body>
 </html>
