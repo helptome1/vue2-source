@@ -38,7 +38,6 @@
 
 
     function start(tag, attrs) {
-      console.log(tag, attrs, '开始');
       var node = createASTElement(tag, attrs);
 
       if (!root) {
@@ -153,12 +152,14 @@
       }
     }
 
-    console.log(root);
+    return root;
   }
 
   function compileToFunctions(template) {
     // 1. 就是将template转化为ast语法树
-    parseHTML(template); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
+    var ast = parseHTML(template); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
+
+    console.log(ast);
   }
 
   function _typeof(obj) {
