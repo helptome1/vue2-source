@@ -26,39 +26,44 @@ function parseHTML(html) { //html最开始肯定是一个<
     return {
       tag,
       type: ELEMENT_TYPE,
-      children,
+      children: [],
       attrs,
       parent: null
     }
   }
 
-  // 解析开始标签，
+  // 解析开始标签，使用栈来构造一棵树。
   function start(tag, attrs) {
     console.log(tag, attrs, '开始')
     let node = createASTElement(tag, attrs)
     if (!root) { // 如果树为空，
       root = node //则作为根节点
     }
-    if(){}
-    
+    if (currentParent) {
+      node.parent = currentParent;
+      currentParent.children.push(node)
+    }
     stack.push(node) // 压入栈中
-    currentParent = node; // currentParent为栈中的最后一个。
-
+    currentParent = node; // currentParent指向栈中的最后一个。
   }
   // 解析文本
   function chars(text) {
-    console.log(text, '文本');
-    currentParent.children.push({
+    text = text.replace(/\s/g, '')
+    text && currentParent.children.push({
       type: TEXT_TYPE,
-      text
+      text,
+      parent: currentParent
     })
   }
   // 结束标签处理
   function end(tag) {
-    console.log(tag, '结束')
-    stack.pop();
+    // 标签匹配结束时，弹出最后一个
+    let node = stack.pop();
+    // todo:校验标签是否合法
+    // 再把currentParent指向栈的最后一个元素
     currentParent = stack[stack.length - 1]
   }
+  // 匹配成功后删除对应的内容
   function advance(n) {
     html = html.substring(n)
   }
@@ -123,6 +128,7 @@ function parseHTML(html) { //html最开始肯定是一个<
       }
     }
   }
+  console.log(root)
 }
 
 export function compileToFunctions(template) {
