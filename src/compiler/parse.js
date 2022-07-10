@@ -3,8 +3,6 @@ const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`
 const startTagOpen = new RegExp(`^<${qnameCapture}`) //匹配到的是一个标签名 <xxx匹配到的是开始标签的名字
 
-console.log(startTagOpen)
-
 const attribute =
   /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
 const dynamicArgAttribute =
@@ -102,7 +100,8 @@ export function parseHTML(html) { //html最开始肯定是一个<
     // 如果textEnd > 0说明就是文本的结束位置
     let textEnd = html.indexOf("<") //如果indexOf中的索引是0 则说明是个标签。
     if (textEnd == 0) {
-      const startTagMatch = parseStartTag(); // 开始标签的匹配结果
+      // 开始标签的匹配结果
+      const startTagMatch = parseStartTag();
       // console.log("startTagMatch", startTagMatch)
       if (startTagMatch) {// 解析到了开始标签
         // todo: 解析开始标签。

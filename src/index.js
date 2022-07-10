@@ -7,6 +7,7 @@ function Vue(options) {
 }
 
 initMixin(Vue) // 将initMixin方法添加到Vue的原型上
+initLifeCycle(Vue)
 
 export default Vue
 

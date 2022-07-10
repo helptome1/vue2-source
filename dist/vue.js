@@ -9,7 +9,6 @@
   var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")");
   var startTagOpen = new RegExp("^<".concat(qnameCapture)); //匹配到的是一个标签名 <xxx匹配到的是开始标签的名字
 
-  console.log(startTagOpen);
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/;
   var startTagClose = /^\s*(\/?)>/;
   var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); //匹配到的是</xxxx>结束标签。
@@ -121,8 +120,8 @@
       var textEnd = html.indexOf("<"); //如果indexOf中的索引是0 则说明是个标签。
 
       if (textEnd == 0) {
-        var startTagMatch = parseStartTag(); // 开始标签的匹配结果
-        // console.log("startTagMatch", startTagMatch)
+        // 开始标签的匹配结果
+        var startTagMatch = parseStartTag(); // console.log("startTagMatch", startTagMatch)
 
         if (startTagMatch) {
           // 解析到了开始标签
@@ -155,11 +154,101 @@
     return root;
   }
 
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g;
+
+  function genProps(attrs) {
+    var str = '';
+
+    for (var i = 0; i < attrs.length; i++) {
+      var attr = attrs[i];
+
+      if (attr.name === 'style') ; // a:b,c:d
+
+
+      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
+    } // 去掉最后一个,
+
+
+    return "".concat(str.slice(0, -1));
+  }
+
+  function gen(node) {
+    // 如果是dom节点就继续生成dom结构
+    if (node.type === 1) {
+      return codegen(node);
+    } else {
+      // 如果是文本
+      var text = node.text; // 匹配是不是普通文本，还是插值字符串
+
+      if (!defaultTagRE.test(text)) {
+        // _v是创建文本的函数
+        return "v_(".concat(JSON.stringify(text), ")");
+      } else {
+        // 如果是插值字符串，要使用这种方式来拼接字符
+        //_v(_s(name) + "hello")
+        var tokens = [];
+        var match; // 每次
+
+        defaultTagRE.lastIndex = 0;
+        var lastIndex = 0;
+
+        while (match = defaultTagRE.exec(text)) {
+          // 匹配的位置{{name}}  hezg {{age}} demo
+          var index = match.index;
+
+          if (index > lastIndex) {
+            tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+          } // 放入匹配的结果。_s({{name}})
+
+
+          tokens.push("_s(".concat(match[1].trim(), ")"));
+          lastIndex = index + match[0].length;
+        }
+
+        if (lastIndex < text.length) {
+          tokens.push(JSON.stringify(text.slice(lastIndex)));
+        }
+
+        return "_v(".concat(tokens.join('+'), ")");
+      }
+    }
+  }
+
+  function genChildren(el) {
+    var children = el.children;
+
+    if (children) {
+      return children.map(function (child) {
+        return gen(child);
+      }).join(',');
+    }
+  } // 生成render函数
+
+
+  function codegen(ast) {
+    var children = genChildren(ast);
+    var code = "_c('".concat(ast.tag, "', ").concat(ast.attrs.length > 0 ? genProps(ast.attrs) : 'null').concat(ast.children.length ? ",".concat(children) : '', ")");
+    return code;
+  }
+
   function compileToFunctions(template) {
     // 1. 就是将template转化为ast语法树
     var ast = parseHTML(template); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
 
-    console.log(ast);
+    var code = codegen(ast); // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
+
+    code = "with(this){return ".concat(code, "}");
+    console.log('code:', code); // render() {
+    //   return _c('div', {id:'app'}, _c('div', {style: {color: 'red'}}, _v(_s(name)+'hello'), _v('span', undefined, -v(_s(name)))))
+    // }
+
+    var render = new Function(code);
+    /**
+     * 模版引擎的实现原理都是with + new Function
+     */
+
+    console.log(render.toString());
+    return render;
   }
 
   function _typeof(obj) {
@@ -390,14 +479,17 @@
           if (el) {
             template = options.template; //如果有el采用模板、
           }
-        } // 如果写了template就需要对模板进行编译
+        } // 如果写了template就需要对模板进行编译，最终生成一个render函数。
 
 
         if (template) {
           var render = compileToFunctions(template);
           options.render = render; // jsx最终会被编译成h('xxx')
         }
-      }
+      } // 最终可以获取到render方法。
+
+
+      mountComponent(vm, el); // 组件的挂载
     };
   }
 
@@ -408,6 +500,8 @@
   }
 
   initMixin(Vue); // 将initMixin方法添加到Vue的原型上
+
+  initLifeCycle(Vue);
 
   return Vue;
 
