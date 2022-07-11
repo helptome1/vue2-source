@@ -1,4 +1,4 @@
-lockfileVersion: 5.3
+lockfileVersion: 5.4
 
 specifiers:
   '@babel/core': ^7.18.2
@@ -11,10 +11,10 @@ specifiers:
 devDependencies:
   '@babel/core': 7.18.2
   '@babel/preset-env': 7.18.2_@babel+core@7.18.2
-  '@rollup/plugin-babel': 5.3.1_@babel+core@7.18.2+rollup@2.75.6
+  '@rollup/plugin-babel': 5.3.1_wwj6nrjtrryxuar2uaqwelbtjy
   '@rollup/plugin-node-resolve': 13.3.0_rollup@2.75.6
   rollup: 2.75.6
-  rollup-plugin-babel: 4.4.0_@babel+core@7.18.2+rollup@2.75.6
+  rollup-plugin-babel: 4.4.0_wwj6nrjtrryxuar2uaqwelbtjy
 
 packages:
 
@@ -1192,7 +1192,7 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.13
     dev: true
 
-  /@rollup/plugin-babel/5.3.1_@babel+core@7.18.2+rollup@2.75.6:
+  /@rollup/plugin-babel/5.3.1_wwj6nrjtrryxuar2uaqwelbtjy:
     resolution: {integrity: sha512-WFfdLWU/xVWKeRQnKmIAQULUI7Il0gZnBIH/ZFO069wYIfPu+8zrfp/KMW0atmELoRDq8FbiP3VCss9MhCut7Q==}
     engines: {node: '>= 10.0.0'}
     peerDependencies:
@@ -1595,7 +1595,7 @@ packages:
       supports-preserve-symlinks-flag: 1.0.0
     dev: true
 
-  /rollup-plugin-babel/4.4.0_@babel+core@7.18.2+rollup@2.75.6:
+  /rollup-plugin-babel/4.4.0_wwj6nrjtrryxuar2uaqwelbtjy:
     resolution: {integrity: sha512-Lek/TYp1+7g7I+uMfJnnSJ7YWoD58ajo6Oarhlex7lvUce+RCKRuGRSgztDO3/MF/PuGKmUL5iTHKf208UNszw==}
     deprecated: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-babel.
     peerDependencies:

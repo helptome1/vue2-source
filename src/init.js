@@ -1,5 +1,6 @@
-import { compileToFunctions } from './compiler'
 import { initState } from './state'
+import { compileToFunction } from './compiler/index.js'
+import { mountComponent } from './lifecycle'
 
 // 通过导出方法给vue添加方法
 export function initMixin(Vue) {
@@ -37,7 +38,7 @@ export function initMixin(Vue) {
       }
       // 如果写了template就需要对模板进行编译，最终生成一个render函数。
       if (template) {
-        const render = compileToFunctions(template)
+        const render = compileToFunction(template)
         options.render = render // jsx最终会被编译成h('xxx')
       }
     }

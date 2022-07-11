@@ -1,21 +1,25 @@
 import { parseHTML } from './parse'
 const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g
-const regexEscapeRE = /[-.*+?^${}()|[\]\/\\]/g
+// const regexEscapeRE = /[-.*+?^${}()|[\]\/\\]/g
 
 // 吧attrs对象转换为字符串
 function genProps(attrs) {
   let str = ''
   for (let i = 0; i < attrs.length; i++) {
-    let attr = attrs[i]
+    let attr = attrs[i];
     if (attr.name === 'style') {
-      // color:red => {color: red}
-      let obj
+      let obj = {};
+      attr.value.split(';').forEach((item) => {
+        let [key, value] = item.split(':')
+        obj[key] = value;
+      })
+      attr.value = obj
     }
     // a:b,c:d
     str += `${attr.name}:${JSON.stringify(attr.value)},`
   }
   // 去掉最后一个,
-  return `${str.slice(0, -1)}`
+  return `{${str.slice(0, -1)}}`
 }
 
 function gen(node) {
@@ -28,7 +32,7 @@ function gen(node) {
     // 匹配是不是普通文本，还是插值字符串
     if (!defaultTagRE.test(text)) {
       // _v是创建文本的函数
-      return `v_(${JSON.stringify(text)})`
+      return `_v(${JSON.stringify(text)})`
     } else {
       // 如果是插值字符串，要使用这种方式来拼接字符
       //_v(_s(name) + "hello")
@@ -55,37 +59,31 @@ function gen(node) {
   }
 }
 
-function genChildren(el) {
-  const children = el.children
-  if (children) {
+function genChildren(children) {
     return children.map((child) => gen(child)).join(',')
-  }
 }
 
 // 生成render函数
 function codegen(ast) {
-  const children = genChildren(ast)
-  let code = `_c('${ast.tag}', ${
-    ast.attrs.length > 0 ? genProps(ast.attrs) : 'null'
-  }${ast.children.length ? `,${children}` : ''})`
+  const children = genChildren(ast.children)
+  let code = `_c('${ast.tag}',${ast.attrs.length > 0 ? genProps(ast.attrs) : 'null'}${ast.children.length ? `,${children}` : ''})`
   return code
 }
 
-export function compileToFunctions(template) {
+export function compileToFunction(template) {
   // 1. 就是将template转化为ast语法树
   let ast = parseHTML(template)
   // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
   let code = codegen(ast)
+  console.log(code)
   // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
   code = `with(this){return ${code}}`
-  console.log('code:', code)
   // render() {
   //   return _c('div', {id:'app'}, _c('div', {style: {color: 'red'}}, _v(_s(name)+'hello'), _v('span', undefined, -v(_s(name)))))
   // }
-  let render = new Function(code)
+  const render = new Function(code)
   /**
    * 模版引擎的实现原理都是with + new Function
    */
-  console.log(render.toString())
   return render
 }

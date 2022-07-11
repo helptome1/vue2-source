@@ -8,10 +8,8 @@
   </head>
 
   <body>
-    <div id="app" style="color: red">
-      <div style="color:red">
-        {{name}}  hezg {{age}} demo
-      </div>
+    <div id="app" style="color:red;background:yellow;">
+      <div style="color:red">{{name}} hezg {{age}} demo</div>
       <span>world</span>
     </div>
     <script src="./vue.js"></script>
@@ -25,18 +23,16 @@
             city: '郑州市'
           },
           skills: ['html', 'css', 'js', { a: 1 }]
-        },
+        }
         // el: '#app' //我们要将数据解析到el元素上
         // template: `<div>template</div>`
       })
       vm.$mount('#app') //挂载到一个元素上
 
-
       // 1. 模板引擎 性能差 需要正则匹配替换，  1.0的时候，没有引入虚拟DOM
       // 2. 采用虚拟dom，数据变化比较虚拟dom的差异，最后更新需要更新的地方。
       // 3. 核心就是我们需要讲 模板变成我们js语法，通过js语法生成虚拟dom
       // 从es6 -> es5；css压缩  我们需要先变成语法书在重新组装代码变成新的语法。
-
     </script>
   </body>
 </html>

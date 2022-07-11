@@ -1,4 +1,5 @@
 import { initMixin } from "./init"
+import { initLifeCycle } from "./lifecycle"
 
 // 使用构造函数的方法创建Vue实例，将所有的方法都耦合起来。
 function Vue(options) {
