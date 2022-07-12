@@ -516,19 +516,77 @@
     return render;
   }
 
+  // h()  _C()都是这个方法
+  function createElementVNode(vm, tag) {
+    var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+    if (data == null) {
+      data = {};
+    }
+
+    var key = data.key;
+    !!key && delete data.key;
+
+    for (var _len = arguments.length, chidren = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      chidren[_key - 3] = arguments[_key];
+    }
+
+    return vNode(vm, tag, key, data, chidren);
+  } // _v();
+
+  function createTextVNode(vm, text) {
+    return vNode(vm, undefined, undefined, undefined, undefined, text);
+  } // ast做的是语法层面的转换，它描述的是语法本身；（可以描述js，css，html）
+  // 而vNode的虚拟dom是描述dom的元素，可以增加一些自定义属性。（只描述dom元素）
+
+  function vNode(vm, tag, key, data, children, text) {
+    return {
+      vm: vm,
+      tag: tag,
+      key: key,
+      data: data,
+      children: children,
+      text: text // 事件，插槽，等等一系列
+
+    };
+  }
+
   function initLifeCycle(Vue) {
-    Vue.prototype._update = function () {
-      console.log('_update');
+    // _update接收一个dom节点。
+    Vue.prototype._update = function (vnode) {
+      console.log('_update', vnode);
+    };
+    /**
+     * 底下的这些_c，_v, _s都是用来转换dom节点的。
+     * 
+     */
+    // _c('div', {}, ...children)
+
+
+    Vue.prototype._c = function () {
+      return createElementVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    }; // _v(text)
+
+
+    Vue.prototype._v = function () {
+      return createTextVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
+    }; // 
+
+
+    Vue.prototype._s = function (value) {
+      if (_typeof(value) != 'object') {
+        return value;
+      }
+
+      return JSON.stringify(value);
     };
 
     Vue.prototype._render = function () {
-      // console.log("_render")
-      var vm = this;
-      console.log(vm.name, vm.age);
+      var vm = this; // 使用call让with中的this指向vm
+
       return vm.$options.render.call(vm);
     };
-  } // eslint-disable-next-line no-unused-vars
-
+  }
   function mountComponent(vm, el) {
     // 1. 调用render方法产生虚拟节点，虚拟DOM
     // vm._render() = vm.$options.render() 虚拟节点

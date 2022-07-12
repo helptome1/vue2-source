@@ -1,16 +1,35 @@
+import { createElementVNode, createTextVNode } from "./vdom"
+
 export function initLifeCycle(Vue) {
-  Vue.prototype._update = function () {
-    console.log('_update')
+  // _update接收一个dom节点。
+  Vue.prototype._update = function (vnode) {
+    
+    console.log('_update',vnode)
+  }
+  /**
+   * 底下的这些_c，_v, _s都是用来转换dom节点的。
+   * 
+   */
+  // _c('div', {}, ...children)
+  Vue.prototype._c = function () {
+    return createElementVNode(this, ...arguments)
+  }
+  // _v(text)
+  Vue.prototype._v = function () {
+    return  createTextVNode(this, ...arguments)
+  }
+  // 
+  Vue.prototype._s = function (value) {
+    if(typeof value != 'object') {return value}
+    return JSON.stringify(value)
   }
   Vue.prototype._render = function () {
-    // console.log("_render")
     const vm = this
-    console.log(vm.name, vm.age)
+    // 使用call让with中的this指向vm
     return vm.$options.render.call(vm)
   }
 }
 
-// eslint-disable-next-line no-unused-vars
 export function mountComponent(vm, el) {
   // 1. 调用render方法产生虚拟节点，虚拟DOM
   // vm._render() = vm.$options.render() 虚拟节点
