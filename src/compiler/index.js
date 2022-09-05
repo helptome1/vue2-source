@@ -34,11 +34,14 @@ function gen(node) {
       // _v是创建文本的函数
       return `_v(${JSON.stringify(text)})`
     } else {
-      // 如果是插值字符串，要使用这种方式来拼接字符
+      /**
+       * 处理插值内容
+       * 如果是插值字符串，要使用这种方式来拼接字符
+       */
       //_v(_s(name) + "hello")
       let tokens = []
       let match
-      // 每次
+      // 正则的lastIndex 属性用于规定下次匹配的起始位置。不然匹配不到。
       defaultTagRE.lastIndex = 0
       let lastIndex = 0
       while ((match = defaultTagRE.exec(text))) {
@@ -73,9 +76,10 @@ function codegen(ast) {
 export function compileToFunction(template) {
   // 1. 就是将template转化为ast语法树
   let ast = parseHTML(template)
+  console.log("ast", ast)
   // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
   let code = codegen(ast)
-  console.log(code)
+  console.log("code",code)
   // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
   code = `with(this){return ${code}}`
   // render() {

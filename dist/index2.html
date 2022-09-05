@@ -9,7 +9,7 @@
 
   <body>
     <div id="app" style="color:red;background:yellow;">
-      <div style="color:red">{{name}} hezg {{age}} demo</div>
+      <div style="color:red">{{name}}--- hezg {{age}} demo</div>
       <span>world</span>
     </div>
     <script src="./vue.js"></script>
@@ -27,10 +27,22 @@
         // el: '#app' //我们要将数据解析到el元素上
         // template: `<div>template</div>`
       })
-      vm.$mount('#app') //挂载到一个元素上
+      vm.$mount('#app') //挂载到一个元素上 
+
+      // 整个的逻辑
+      // 1）将数据先处理成响应式数据，initState（针对对象使用defineProperty，针对数组就是重写数组的方法。）
+      // 2）模版编译：先将模版转换成ast语法树，将ast语法树再转为render方法（创建一个虚拟dom，也是js语法）
+      // 3）调用render函数，会进行取值操作，产生对应的虚拟dom render(h('div', null, _v(name))),触发get
+      // 4）将虚拟dom创建为真实dom
+
+
+      // 1. 观察者模式下如何做依赖收集。（使用观察者解决数据更新）
+      // 2. 异步更新策略。（多数据更新时，如何解决多更新）
+      // 3. mixin的实现原理。
+
 
       // 1. 模板引擎 性能差 需要正则匹配替换，  1.0的时候，没有引入虚拟DOM
-      // 2. 采用虚拟dom，数据变化比较虚拟dom的差异，最后更新需要更新的地方。
+      // 2. 采用虚拟dom，数据变化比较虚拟dom的差异，最后更新需 要更新的地方。
       // 3. 核心就是我们需要讲 模板变成我们js语法，通过js语法生成虚拟dom
       // 从es6 -> es5；css压缩  我们需要先变成语法书在重新组装代码变成新的语法。
     </script>

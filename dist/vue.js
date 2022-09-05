@@ -454,10 +454,13 @@
         // _v是创建文本的函数
         return "_v(".concat(JSON.stringify(text), ")");
       } else {
-        // 如果是插值字符串，要使用这种方式来拼接字符
+        /**
+         * 处理插值内容
+         * 如果是插值字符串，要使用这种方式来拼接字符
+         */
         //_v(_s(name) + "hello")
         var tokens = [];
-        var match; // 每次
+        var match; // 正则的lastIndex 属性用于规定下次匹配的起始位置。不然匹配不到。
 
         defaultTagRE.lastIndex = 0;
         var lastIndex = 0;
@@ -499,10 +502,11 @@
 
   function compileToFunction(template) {
     // 1. 就是将template转化为ast语法树
-    var ast = parseHTML(template); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
+    var ast = parseHTML(template);
+    console.log("ast", ast); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
 
     var code = codegen(ast);
-    console.log(code); // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
+    console.log("code", code); // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
 
     code = "with(this){return ".concat(code, "}"); // render() {
     //   return _c('div', {id:'app'}, _c('div', {style: {color: 'red'}}, _v(_s(name)+'hello'), _v('span', undefined, -v(_s(name)))))
@@ -551,14 +555,81 @@
     };
   }
 
+  function createElm(vnode) {
+    var tag = vnode.tag,
+        data = vnode.data,
+        children = vnode.children,
+        text = vnode.text;
+
+    if (typeof tag === 'string') {
+      //tag如果是标签
+      // 这里把虚拟节点和真实节点联系起来。
+      vnode.el = document.createElement(tag); // 更新data中的数据
+
+      patchProps(vnode.el, data); // 如果有children，就使用递归来循环创建children里面的内容
+
+      children.forEach(function (child) {
+        vnode.el.appendChild(createElm(child));
+      });
+    } else {
+      // 如果是文本
+      vnode.el = document.createTextNode(text);
+    }
+
+    return vnode.el;
+  }
+
+  function patchProps(el, props) {
+    for (var key in props) {
+      if (key === 'style') {
+        // style: {color: 'red'}
+        for (var styleName in props.style) {
+          el.style[styleName] = props.style[styleName];
+        }
+      } else {
+        el.setAttribute(key, props[key]);
+      }
+    }
+  }
+  /**
+   * 用于更新dom节点
+   * @param {*} oldVnode 旧的dom节点
+   * @param {*} vnode 新的dom节点
+   */
+
+
+  function patch(oldVnode, vnode) {
+    // 写的是初渲染流程
+    var isRealElement = oldVnode.nodeType;
+
+    if (isRealElement) {
+      var elm = oldVnode;
+      var parentElm = elm.parentNode; //拿到父级元素。==> body
+
+      var newEle = createElm(vnode);
+      parentElm.insertBefore(newEle, elm.nextSibing);
+      parentElm.removeChild(elm);
+      return newEle;
+    }
+  }
+  /**
+   * 但是现在有个问题，就是每次更新数据都需要手动的去执行_update和_render函数。
+   * 为了解决这一问题，引入了观察者模式。为了节约性能，引入了diff算法。
+   * @param {*} Vue 
+   */
+
+
   function initLifeCycle(Vue) {
-    // _update接收一个dom节点。
+    // _update接收一个dom节点。把虚拟dom装为真实dom
     Vue.prototype._update = function (vnode) {
-      console.log('_update', vnode);
+      // 将虚拟dom转换为真实dom
+      var vm = this;
+      var el = vm.$el; // patch既有初始化的功能，又更新新的值
+
+      vm.$el = patch(el, vnode);
     };
     /**
      * 底下的这些_c，_v, _s都是用来转换dom节点的。
-     * 
      */
     // _c('div', {}, ...children)
 
@@ -570,7 +641,7 @@
 
     Vue.prototype._v = function () {
       return createTextVNode.apply(void 0, [this].concat(Array.prototype.slice.call(arguments)));
-    }; // 
+    }; //
 
 
     Vue.prototype._s = function (value) {
@@ -579,18 +650,22 @@
       }
 
       return JSON.stringify(value);
-    };
+    }; // 创建虚拟dom
+
 
     Vue.prototype._render = function () {
-      var vm = this; // 使用call让with中的this指向vm
+      var vm = this; // 使用call让with中的this指向vm,并且执行函数
 
+      console.log("options", vm.$options.render.call(vm));
       return vm.$options.render.call(vm);
     };
   }
   function mountComponent(vm, el) {
-    // 1. 调用render方法产生虚拟节点，虚拟DOM
+    // 把el也挂宅到vm实例上
+    vm.$el = el; // 1. 调用render方法产生虚拟节点，虚拟DOM
     // vm._render() = vm.$options.render() 虚拟节点
     // vm._update就是把虚拟节点变成真实的节点。
+
     vm._update(vm._render()); // 2. 根据虚拟DOM产生真是DOM
     // 3. 插入到el元素中
 
@@ -643,7 +718,7 @@
       } // 最终可以获取到render方法。
 
 
-      mountComponent(vm); // 组件的挂载
+      mountComponent(vm, el); // 组件的挂载
     };
   }
 
