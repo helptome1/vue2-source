@@ -142,6 +142,95 @@
     };
   });
 
+  var id$1 = 0; // 观察者，观察某个属性的变化。每个属性都有一个dep(被观察者)，watcher就是观察者。属性变化会通知观察者更新。
+  // 1. 不同的组件有不同的watcher。 目前只有一个，渲染跟实例
+
+  var Watch = /*#__PURE__*/function () {
+    function Watch(vm, fn, options) {
+      _classCallCheck(this, Watch);
+
+      this.id = id$1++;
+      this.renderWatcher = options;
+      this.getter = fn;
+      this.dep = []; //后续实现计算属性，和一些清理工作时使用。记住dep
+
+      this.depsId = new Set();
+      this.get();
+    }
+
+    _createClass(Watch, [{
+      key: "get",
+      value: function get() {
+        Dep.target = this; // 静态属性就一份
+
+        this.getter(); //回去vm上取值, vm._update(vm._render)
+
+        Dep.target = null;
+      } // 一个组件 对应着多个属性。重复的属性也不用记录。
+
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+
+        if (!this.depsId.has(id)) {
+          this.dep.push(id);
+          this.depsId.add(id);
+          dep.addSub(this); // watcher已经记住了dep，而且去重复了，可以让dep记住了watcher
+        }
+      } // 更新视图
+
+    }, {
+      key: "update",
+      value: function update() {
+        this.get(); //更新渲染
+      }
+    }]);
+
+    return Watch;
+  }();
+
+  var id = 0; // dep用来收集watcher，而且，dep和watcher是多对多的关系。
+  // 重点：只有在模版中使用的变量，才会被收集
+
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+
+      this.id = id++;
+      this.subs = [];
+    }
+
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        // 需要对watcher去重。只是一个单向的关系.dep -> watcher, 所以不能简单的把wathcer直接记录下来。
+        // this.subs.push(Dep.target)
+        // 调用watcher的addDep方法。把当前dep传给wathcer
+        Dep.target.addDep(this);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      } // 通知更新, 告诉watcher，去更新视图
+
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (item) {
+          return item.update();
+        });
+      }
+    }]);
+
+    return Dep;
+  }(); // 静态属性。只有一个。
+  // 记录的是wathcer
+
+
+  Dep.target = null;
+
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
       _classCallCheck(this, Observe);
@@ -189,21 +278,28 @@
 
   function defineReactive(target, key, val) {
     // 如果val是对象，则递归调用，劫持对象。
-    observe(val); // 对对象重新定义了。
+    observe(val); // 每一个属性都会有一个dep
+
+    var dep = new Dep(); // 对对象重新定义了。
 
     Object.defineProperty(target, key, {
-      // 取值的时候
+      // 用户取值的时候
       get: function get() {
-        // console.log('用户取值了',key)
+        if (Dep.target) {
+          // 让这个属性的收集器记住当前的watcher
+          dep.depend();
+        }
+
         return val;
       },
       // 设置或者修改值时执行
       set: function set(newVal) {
         if (val !== newVal) {
-          // console.log('用户设置，修改了值')
-          // 对修改的对象属性进行劫持。
+          if (newVal === val) return; // 对修改的对象属性进行劫持。
+
           observe(newVal);
           val = newVal;
+          dep.notify(); //通知更新
         }
       }
     });
@@ -615,7 +711,7 @@
   /**
    * 但是现在有个问题，就是每次更新数据都需要手动的去执行_update和_render函数。
    * 为了解决这一问题，引入了观察者模式。为了节约性能，引入了diff算法。
-   * @param {*} Vue 
+   * @param {*} Vue
    */
 
 
@@ -656,7 +752,7 @@
     Vue.prototype._render = function () {
       var vm = this; // 使用call让with中的this指向vm,并且执行函数
 
-      console.log("options", vm.$options.render.call(vm));
+      console.log('options', vm.$options.render.call(vm));
       return vm.$options.render.call(vm);
     };
   }
@@ -666,9 +762,12 @@
     // vm._render() = vm.$options.render() 虚拟节点
     // vm._update就是把虚拟节点变成真实的节点。
 
-    vm._update(vm._render()); // 2. 根据虚拟DOM产生真是DOM
-    // 3. 插入到el元素中
+    var updateComponent = function updateComponent() {
+      vm._update(vm._render());
+    };
 
+    new Watch(vm, updateComponent, true); // 2. 根据虚拟DOM产生真是DOM
+    // 3. 插入到el元素中
   } // vue的核心：1。创建了响应式数据；2.html模版转换成ast语法树；
   // 3.将ast语法树转换为render函数；4.后续每次更新html只需要执行render函数（无需再次执行ast语法树），节省性能。
   // 重点：render函数会产生虚拟节点。（使用响应式数据）

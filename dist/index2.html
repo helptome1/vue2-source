@@ -29,6 +29,12 @@
       })
       vm.$mount('#app') //挂载到一个元素上 
 
+      setTimeout(() => {
+          vm.name = '呜呜呜呜-----'
+          vm.age = 50
+          // vm._update(vm._render()) // 数据变化后可以自己渲染
+      }, 2000);
+
       // 整个的逻辑
       // 1）将数据先处理成响应式数据，initState（针对对象使用defineProperty，针对数组就是重写数组的方法。）
       // 2）模版编译：先将模版转换成ast语法树，将ast语法树再转为render方法（创建一个虚拟dom，也是js语法）
