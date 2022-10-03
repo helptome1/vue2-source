@@ -32,7 +32,35 @@ class Watch {
 
   // 更新视图
   update() {
-    this.get() //更新渲染
+    // this.get() //更新渲染
+    queueWatcher(this)
+  }
+}
+
+let queue = []
+let has = {}
+let pending = false // 防抖
+function flushScheduleQueue() {
+  let flushQueue = queue.slice(0)
+  // 清空队列
+  queue = []
+  has = {}
+  pending = false
+  flushQueue.forEach((item) => {
+    item.run()
+  })
+}
+
+function queueWatcher(watcher) {
+  const id = watcher.id
+  if (!has[id]) {
+    queue.push(watcher)
+    has[id] = true
+    // 不管我们的update执行多少次，但是最终只执行一轮刷新操作。
+    if (!pending) {
+      setTimeout(flushScheduleQueue, 0)
+      pending = true
+    }
   }
 }
 

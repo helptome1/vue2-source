@@ -105,6 +105,7 @@ export function mountComponent(vm, el) {
   const updateComponent = () => {
     vm._update(vm._render())
   }
+  // 启动观察者模式
   new Watch(vm, updateComponent, true)
   // 2. 根据虚拟DOM产生真是DOM
 

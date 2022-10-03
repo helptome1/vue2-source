@@ -183,12 +183,42 @@
     }, {
       key: "update",
       value: function update() {
-        this.get(); //更新渲染
+        // this.get() //更新渲染
+        queueWatcher(this);
       }
     }]);
 
     return Watch;
   }();
+
+  var queue = [];
+  var has = {};
+  var pending = false; // 防抖
+
+  function flushScheduleQueue() {
+    var flushQueue = queue.slice(0); // 清空队列
+
+    queue = [];
+    has = {};
+    pending = false;
+    flushQueue.forEach(function (item) {
+      item.run();
+    });
+  }
+
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+
+    if (!has[id]) {
+      queue.push(watcher);
+      has[id] = true; // 不管我们的update执行多少次，但是最终只执行一轮刷新操作。
+
+      if (!pending) {
+        setTimeout(flushScheduleQueue, 0);
+        pending = true;
+      }
+    }
+  }
 
   var id = 0; // dep用来收集watcher，而且，dep和watcher是多对多的关系。
   // 重点：只有在模版中使用的变量，才会被收集
@@ -246,7 +276,7 @@
       if (Array.isArray(data)) {
         // 为了解决数组中新增的属性不能劫持的问题，需要重写素组方法，并且不可以影响之前的数组方法。
         // 新建一个array.js实现新增属性的方法重写。
-        data.__proto__ = newArrayProto; //  修改数组的每一项时进行修改，不管是基本数据类型，还是引用数据类型。
+        data.__proto__ = newArrayProto; // 修改数组的每一项时进行修改，不管是基本数据类型，还是引用数据类型。
 
         this.observeArray(data);
       } else {
@@ -273,7 +303,7 @@
     }]);
 
     return Observe;
-  }(); // 劫持数据，响应式数据， 这是一个闭包
+  }(); // 劫持数据的逻辑，响应式数据， 这是一个闭包
 
 
   function defineReactive(target, key, val) {
@@ -303,24 +333,27 @@
         }
       }
     });
-  }
+  } // 劫持数据
+
   function observe(data) {
-    // 对这个对象进行劫持
+    // 1. 判断data是否是对象。不是对象，或者为空，不用劫持。
     if (_typeof(data) !== 'object' || data === null) {
       return; //只对对象进行劫持
-    }
+    } // 2. 如果一个对象已经被劫持了，那么它就不需要再次被劫持。（判断方法是：添加一个实例，用实例来判断）
+    // 如果已经被劫持，就不需要再劫持了
+
 
     if (data.__ob__ instanceof Observe) {
       return data.__ob__;
-    } // 如果一个对象已经被劫持了，那么它就不需要再次被劫持。（判断方法是：添加一个实例，用实例来判断）
-    // 新增了Observer实例，判断这个对象是否已经被劫持
+    } // 3. 新增了Observer实例，判断这个对象是否已经被劫持
+    // 劫持数据
 
 
     return new Observe(data);
   }
 
   function initState(vm) {
-    var option = vm.$options;
+    var option = vm.$options; // 如果用户vue({data: {}}), 有data属性。就执行initData
 
     if (option.data) {
       initData(vm);
@@ -339,16 +372,17 @@
         }
       });
     });
-  }
+  } // 
+
 
   function initData(vm) {
-    var data = vm.$options.data; // data可能是函数
+    var data = vm.$options.data; // 1. 拿到data属性。由于data可能是函数，所以需要判断一下data的类型。
 
-    data = typeof data === 'function' ? data.call(this) : data; // 把返回的对象放到_data上。
+    data = typeof data === 'function' ? data.call(this) : data; // 2. 把返回的对象放到vue实例的_data上。
 
-    vm._data = data; // 对vue2的数据进行劫持，采用一个api，defineProperty
+    vm._data = data; // 对vue2的数据进行劫持，使用js的api->defineProperty
 
-    observe(data); // 将vm._data挂载到vm上,用vm来代理
+    observe(data); // 3. 将vm._data中的数据都挂载到vm上,用vm来代理
 
     proxy(vm, '_data');
   }
@@ -601,8 +635,7 @@
     var ast = parseHTML(template);
     console.log("ast", ast); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
 
-    var code = codegen(ast);
-    console.log("code", code); // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
+    var code = codegen(ast); // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
 
     code = "with(this){return ".concat(code, "}"); // render() {
     //   return _c('div', {id:'app'}, _c('div', {style: {color: 'red'}}, _v(_s(name)+'hello'), _v('span', undefined, -v(_s(name)))))
@@ -764,7 +797,8 @@
 
     var updateComponent = function updateComponent() {
       vm._update(vm._render());
-    };
+    }; // 启动观察者模式
+
 
     new Watch(vm, updateComponent, true); // 2. 根据虚拟DOM产生真是DOM
     // 3. 插入到el元素中
