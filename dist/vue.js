@@ -186,21 +186,29 @@
         // this.get() //更新渲染
         queueWatcher(this);
       }
+    }, {
+      key: "run",
+      value: function run() {
+        this.get(); // 执行刷新
+      }
     }]);
 
     return Watch;
-  }();
+  }(); // 以下代码用来，更新数据的时候，等到最后修改完，只刷新一次节约性能。
+
 
   var queue = [];
   var has = {};
   var pending = false; // 防抖
 
   function flushScheduleQueue() {
+    // 拷贝了一份。
     var flushQueue = queue.slice(0); // 清空队列
 
     queue = [];
     has = {};
-    pending = false;
+    pending = false; // 在刷新的过程中，可能有新的wathcer，回重新放到queue中。
+
     flushQueue.forEach(function (item) {
       item.run();
     });
@@ -218,6 +226,11 @@
         pending = true;
       }
     }
+  } // 问题是，callback是先用户的，还是先内部的
+
+
+  function nextTick(cb) {
+    console.log("cb", cb);
   }
 
   var id = 0; // dep用来收集watcher，而且，dep和watcher是多对多的关系。
@@ -866,6 +879,7 @@
   initMixin(Vue); // 将initMixin方法添加到Vue的原型上
 
   initLifeCycle(Vue);
+  Vue.prototype.$nextTick = nextTick;
 
   return Vue;
 

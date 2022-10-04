@@ -1,5 +1,6 @@
 import { initMixin } from "./init"
 import { initLifeCycle } from "./lifecycle"
+import { nextTick } from "./observe/watcher"
 
 // 使用构造函数的方法创建Vue实例，将所有的方法都耦合起来。
 function Vue(options) {
@@ -9,6 +10,8 @@ function Vue(options) {
 
 initMixin(Vue) // 将initMixin方法添加到Vue的原型上
 initLifeCycle(Vue)
+
+Vue.prototype.$nextTick = nextTick
 
 export default Vue
 

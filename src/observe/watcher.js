@@ -33,19 +33,26 @@ class Watch {
   // 更新视图
   update() {
     // this.get() //更新渲染
-    queueWatcher(this)
+    queueWatcher(this);
+  }
+
+  run() {
+    this.get() // 执行刷新
   }
 }
 
+// 以下代码用来，更新数据的时候，等到最后修改完，只刷新一次节约性能。
 let queue = []
 let has = {}
 let pending = false // 防抖
 function flushScheduleQueue() {
+  // 拷贝了一份。
   let flushQueue = queue.slice(0)
   // 清空队列
   queue = []
   has = {}
   pending = false
+  // 在刷新的过程中，可能有新的wathcer，回重新放到queue中。
   flushQueue.forEach((item) => {
     item.run()
   })
@@ -62,6 +69,11 @@ function queueWatcher(watcher) {
       pending = true
     }
   }
+}
+
+// 问题是，callback是先用户的，还是先内部的
+export function nextTick (cb) {
+  console.log("cb", cb);
 }
 
 export default Watch
