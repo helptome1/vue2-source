@@ -21,7 +21,7 @@ class Watch {
   }
 
   // 一个组件 对应着多个属性。重复的属性也不用记录。
-  addDep(dep) {
+  addDep(dep) { 
     let id = dep.id
     if (!this.depsId.has(id)) {
       this.dep.push(id)

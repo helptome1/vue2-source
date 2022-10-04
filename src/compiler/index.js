@@ -2,7 +2,7 @@ import { parseHTML } from './parse'
 const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g
 // const regexEscapeRE = /[-.*+?^${}()|[\]\/\\]/g
 
-// 吧attrs对象转换为字符串
+// 把attrs对象转换为字符串
 function genProps(attrs) {
   let str = ''
   for (let i = 0; i < attrs.length; i++) {
@@ -22,6 +22,7 @@ function genProps(attrs) {
   return `{${str.slice(0, -1)}}`
 }
 
+// 生成dom节点
 function gen(node) {
   // 如果是dom节点就继续生成dom结构
   if (node.type === 1) {
@@ -81,6 +82,8 @@ export function compileToFunction(template) {
   let code = codegen(ast)
   // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
   code = `with(this){return ${code}}` 
+  console.log("code", code)
+
   // render() {
   //   return _c('div', {id:'app'}, _c('div', {style: {color: 'red'}}, _v(_s(name)+'hello'), _v('span', undefined, -v(_s(name)))))
   // }
