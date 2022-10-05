@@ -226,11 +226,60 @@
         pending = true;
       }
     }
-  } // 问题是，callback是先用户的，还是先内部的
+  } // nextTick并不是创建一个异步任务，而是将这个任务维护到了队列中去。
+  // 使用p处理，解决多次使用nextTick只执行一次的问题。
 
+
+  var callbacks = [];
+  var waiting = false;
+
+  function flushCallbacks() {
+    // 拷贝一份
+    var cbs = callbacks.slice(0);
+    waiting = false;
+    callbacks = [];
+    cbs.forEach(function (cb) {
+      return cb();
+    }); // 按照次序执行
+  } // nextTick 没有直接使用某个api，来使用异步。而是优雅降级
+  // 内部先采用的是promise（ie不兼容） MutationObserver(h5的api) 可以考虑ie专享setImmediate ---> setTimeout
+
+
+  var timerFunc;
+
+  if (Promise) {
+    timerFunc = function timerFunc() {
+      Promise.resolve().then(flushCallbacks);
+    };
+  } else if (MutationObserver) {
+    var observer = new MutationObserver(flushCallbacks); //这里传入的回调是异步执行的。
+
+    var textNode = document.createTextNode(1);
+    observer.observe(textNode, {
+      characterData: true
+    });
+
+    timerFunc = function timerFunc() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timerFunc = function timerFunc() {
+      setImmediate(flushCallbacks);
+    };
+  } else {
+    timerFunc = setTimeout(function () {
+    }, 0);
+  }
 
   function nextTick(cb) {
-    console.log("cb", cb);
+    callbacks.push(cb);
+
+    if (!waiting) {
+      setTimeout(function () {
+        timerFunc(); // 多次使用nextTick，最后一起刷新。
+      }, 0);
+      waiting = true;
+    }
   }
 
   var id = 0; // dep用来收集watcher，而且，dep和watcher是多对多的关系。

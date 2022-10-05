@@ -35,9 +35,9 @@
       //   // vm._update(vm._render()) // 数据变化后可以自己渲染
       // }, 2000)
       vm.name = '呜呜呜说' // 不会立即渲染页面
-      
+
       vm.$nextTick(() => {
-        console.log(app.innerHtml) // 同步获取dom
+        console.log(app.innerHTML) // 同步获取dom
       })
 
       // 整个的逻辑
