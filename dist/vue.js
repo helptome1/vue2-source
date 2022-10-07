@@ -165,7 +165,6 @@
 
   var methods = ['push', 'pop', 'shift', 'unshift', 'reverse', 'sort', 'splice'];
   methods.forEach(function (method) {
-    // arr.push([1,2,3])
     newArrayProto[method] = function () {
       var _oldArrayProto$method;
 
@@ -184,6 +183,8 @@
 
       switch (method) {
         case 'push':
+          break;
+
         case 'unshift':
           inserted = args;
           break;
@@ -196,8 +197,10 @@
       if (inserted) {
         // 对新增的数组内容再次劫持
         ob.observeArray(inserted);
-      }
+      } // 数组变化了，通知对应的wathcer实现更新逻辑
 
+
+      ob.dep.notify();
       return result;
     };
   });
@@ -387,9 +390,11 @@
     function Observe(data) {
       _classCallCheck(this, Observe);
 
-      // Object.defineProperty只能劫持已经存在的属性，不能劫持新增的属性（为此vue会新增一些方法例如：$set, $delete）
+      // 给每个对象增加依赖收集功能。
+      this.dep = new Dep(); // Object.defineProperty只能劫持已经存在的属性，不能劫持新增的属性（为此vue会新增一些方法例如：$set, $delete）
       // 把Observe挂载到__ob__上，做一个标识（识别是否已经监听），同时可以使用walk和observeArray方法。
       // 使用Object.defineProperty方法加上__ob__属性，表示已经监听，并且让这个属性不可枚举，防止死循环。
+
       Object.defineProperty(data, '__ob__', {
         value: this,
         enumerable: false
@@ -425,12 +430,24 @@
     }]);
 
     return Observe;
-  }(); // 劫持数据的逻辑，响应式数据， 这是一个闭包
+  }();
+
+  function dependArray(val) {
+    for (var i = 0; i < val.length; i++) {
+      var current = val[i];
+      current.__ob__ && current.__ob__.dep.depend();
+
+      if (Array.isArray(current)) {
+        // 递归收集依赖
+        dependArray(current);
+      }
+    }
+  } // 劫持数据的逻辑，响应式数据， 这是一个闭包
 
 
   function defineReactive(target, key, val) {
-    // 如果val是对象，则递归调用，劫持对象。
-    observe(val); // 每一个属性都会有一个dep
+    // 如果val是对象，则递归调用，进行属性劫持。 childOb.dep用来收集依赖。
+    var childOb = observe(val); // 每一个属性都会有一个dep
 
     var dep = new Dep(); // 对对象重新定义了。
 
@@ -438,8 +455,17 @@
       // 用户取值的时候
       get: function get() {
         if (Dep.target) {
-          // 让这个属性的收集器记住当前的watcher
+          // 让这个属性是让收集器记住当前的watcher
           dep.depend();
+
+          if (childOb) {
+            childOb.dep.depend(); // 让数组和对象本身也实现依赖收集
+
+            if (Array.isArray(val)) {
+              //这种用来处理数组里嵌套数组的更新
+              dependArray(val);
+            }
+          }
         }
 
         return val;

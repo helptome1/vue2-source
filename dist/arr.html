@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <!-- 这里数组取值的时候，会调用JSON.stringfy()对数组的对象取值 所以对象会收集依赖 -->
+    <!-- _V(_s(arr)) -->
+    <div id="app">
+      <div>{{arr}}</div>
+    </div>
+    <script src="./vue.js"></script>
+    <script>
+      const vm = new Vue({
+        el: '#app',
+        data: {
+          arr: [1, 2, 3, { a: 3 }],
+          obj: { a: 1 }
+        }
+      })
+      // vm.arr[0] = 100 // vue2监控不到这样的方式修改数组
+
+      // 这里也监控不到arr属性，而是arr对象的数组对象。
+      vm.arr.push(100)
+    </script>
+  </body>
+</html>
