@@ -91,7 +91,7 @@ export function initLifeCycle(Vue) {
   Vue.prototype._render = function () {
     const vm = this
     // 使用call让with中的this指向vm,并且执行函数
-    console.log('options', vm.$options.render.call(vm))
+    // console.log('options', vm.$options.render.call(vm))
     return vm.$options.render.call(vm)
   }
 }
@@ -116,3 +116,12 @@ export function mountComponent(vm, el) {
 // 3.将ast语法树转换为render函数；4.后续每次更新html只需要执行render函数（无需再次执行ast语法树），节省性能。
 // 重点：render函数会产生虚拟节点。（使用响应式数据）
 // 5. 根据生成的虚拟节点创建真是的dom
+
+// 调用钩子函数和生命周期
+export function callHook(vm, hook) {
+  // 调用钩子函数
+  const handlers = vm.$options[hook]
+  if (handlers) {
+    handlers.forEach((handler) => handler.call(vm))
+  }
+}

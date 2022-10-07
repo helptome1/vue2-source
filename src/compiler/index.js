@@ -77,12 +77,10 @@ function codegen(ast) {
 export function compileToFunction(template) {
   // 1. 就是将template转化为ast语法树
   let ast = parseHTML(template)
-  console.log("ast", ast)
   // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
   let code = codegen(ast)
   // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
   code = `with(this){return ${code}}` 
-  console.log("code", code)
 
   // render() {
   //   return _c('div', {id:'app'}, _c('div', {style: {color: 'red'}}, _v(_s(name)+'hello'), _v('span', undefined, -v(_s(name)))))

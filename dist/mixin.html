@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div id="app" style="color: red; background: yellow">
+      <div style="color: red">{{name}}--- hezg {{age}} demo</div>
+      <span>world</span>
+    </div>
+    <script src="./vue.js"></script>
+    <script>
+      Vue.mixin({
+        created() {
+          console.log('mixin1')
+        }
+      })
+      Vue.mixin({
+        created() {
+          console.log('mixin2')
+        }
+      })
+      console.log(Vue.options)
+
+      const vm = new Vue({
+        data: {
+          name: 'hzg',
+          age: 18,
+          address: {
+            street: '河南省',
+            city: '郑州市'
+          },
+          skills: ['html', 'css', 'js', { a: 1 }]
+        },
+        created() {
+          console.log('created')
+        }
+      })
+      // vm.$mount('#app') //挂载到一个元素上
+    </script>
+  </body>
+</html>

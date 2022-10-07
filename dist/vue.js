@@ -4,6 +4,66 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Vue = factory());
 })(this, (function () { 'use strict';
 
+  // 静态方法
+  // 1. 策略模式---->使用策略减少if else
+  // 2. 创建生命周期
+  var strats = {};
+  var LIFECYCLE = ['beforeCreate', 'created'];
+  LIFECYCLE.forEach(function (hook) {
+    strats[hook] = function (p, c) {
+      // 1. {} {created: function() {}} => {created: [fn]}
+      // 2. {created: [fn]} {created: function() {}} => {created: [fn, fn]}
+      if (c) {
+        //如果有儿子
+        if (p) {
+          // 如果有父亲, 优先使用呢儿子的方法，所以使用覆盖。
+          return p.concat(c);
+        } else {
+          // 只有儿子
+          return [c];
+        }
+      } else {
+        // 没有儿子
+        return p;
+      }
+    };
+  });
+  function mergeOptions(parent, child) {
+    var options = {};
+
+    for (var key in parent) {
+      mergeField(key);
+    }
+
+    for (var _key in child) {
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+
+    function mergeField(key) {
+      // 使用策略模式，减少if else
+      if (strats[key]) {
+        options[key] = strats[key](parent[key], child[key]);
+      } else {
+        options[key] = child[key] || parent[key]; // 优先采用儿子，再采用父亲
+      }
+    }
+
+    return options;
+  }
+
+  function initGlobalAPI(Vue) {
+    Vue.options = {};
+
+    Vue.mixin = function (mixin) {
+      // debugger
+      // 把用户选项和全局的options合并
+      this.options = mergeOptions(this.options, mixin);
+      return this;
+    };
+  }
+
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
@@ -695,13 +755,11 @@
 
   function compileToFunction(template) {
     // 1. 就是将template转化为ast语法树
-    var ast = parseHTML(template);
-    console.log("ast", ast); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
+    var ast = parseHTML(template); // 2. 生成render方法（render方法执行后的返回的结果就是 虚拟dom）
 
     var code = codegen(ast); // 这里使用with是因为，方便取值。因为code中的代码有传参数。使用render.call(vm)就可以改变with中this的指向。
 
-    code = "with(this){return ".concat(code, "}");
-    console.log("code", code); // render() {
+    code = "with(this){return ".concat(code, "}"); // render() {
     //   return _c('div', {id:'app'}, _c('div', {style: {color: 'red'}}, _v(_s(name)+'hello'), _v('span', undefined, -v(_s(name)))))
     // }
 
@@ -848,8 +906,8 @@
 
     Vue.prototype._render = function () {
       var vm = this; // 使用call让with中的this指向vm,并且执行函数
+      // console.log('options', vm.$options.render.call(vm))
 
-      console.log('options', vm.$options.render.call(vm));
       return vm.$options.render.call(vm);
     };
   }
@@ -870,15 +928,33 @@
   // 3.将ast语法树转换为render函数；4.后续每次更新html只需要执行render函数（无需再次执行ast语法树），节省性能。
   // 重点：render函数会产生虚拟节点。（使用响应式数据）
   // 5. 根据生成的虚拟节点创建真是的dom
+  // 调用钩子函数和生命周期
+
+  function callHook(vm, hook) {
+    // 调用钩子函数
+    var handlers = vm.$options[hook];
+
+    if (handlers) {
+      handlers.forEach(function (handler) {
+        return handler.call(vm);
+      });
+    }
+  }
 
   function initMixin(Vue) {
     // 1. 给vue添加一个用于初始化操作的_init方法
     Vue.prototype._init = function (options) {
-      var vm = this; // 使用vue时的$nextTick()，$data等等，将用户的选项挂载到实例上
+      // vm.$options就是获取用户的配置
+      // 使用vue时的$nextTick()，$data， $attr等等，将用户的选项挂载到实例上
+      var vm = this; // 我们 定义的全局指令和过滤器。。。都会挂载到实例上。
+      // this.constructor.options拿到vue实例的options
 
-      vm.$options = options; // 初始化状态
+      vm.$options = mergeOptions(this.constructor.options, options); // 生命周期beforeCreate
+
+      callHook(vm, 'beforeCreate'); // 初始化状态,挂载数据
 
       initState(vm);
+      callHook(vm, 'created');
 
       if (options.el) {
         vm.$mount(options.el); //实现数据的挂载
@@ -925,10 +1001,11 @@
 
   }
 
+  Vue.prototype.$nextTick = nextTick;
   initMixin(Vue); // 将initMixin方法添加到Vue的原型上
 
   initLifeCycle(Vue);
-  Vue.prototype.$nextTick = nextTick;
+  initGlobalAPI(Vue); // 初始化api——mixin
 
   return Vue;
 
