@@ -15,7 +15,7 @@ export function initMixin(Vue) {
     vm.$options = mergeOptions(this.constructor.options, options)
     // 生命周期beforeCreate
     callHook(vm, 'beforeCreate');
-    // 初始化状态,挂载数据
+    // 初始化状态,挂载数据,计算属性。
     initState(vm)
     callHook(vm, 'created');
 

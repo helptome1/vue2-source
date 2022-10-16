@@ -1,4 +1,4 @@
-import Dep from './dep'
+import Dep, {popTarget, pushTarget} from './dep'
 
 let id = 0
 
@@ -15,9 +15,9 @@ class Watch {
   }
 
   get() {
-    Dep.target = this // 静态属性就一份
-    this.getter() //回去vm上取值, vm._update(vm._render)
-    Dep.target = null
+      pushTarget(this)
+      this.getter() //回去vm上取值, vm._update(vm._render)
+      popTarget()
   }
 
   // 一个组件 对应着多个属性。重复的属性也不用记录。
@@ -71,8 +71,12 @@ function queueWatcher(watcher) {
   }
 }
 
+
+/**
+    nextTick实现方式
+*/
 // nextTick并不是创建一个异步任务，而是将这个任务维护到了队列中去。
-// 使用p处理，解决多次使用nextTick只执行一次的问题。
+// 使用p处理，使多次使用nextTick而执行一次。
 let callbacks = []
 let waiting = false
 

@@ -6,6 +6,9 @@ export function initState(vm) {
   if (option.data) {
     initData(vm)
   }
+  if(option.computed) {
+    initComputed(vm)
+  }
 }
 
 function proxy(vm, target) {

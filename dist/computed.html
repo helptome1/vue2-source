@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Document</title>
+
+</head>
+
+<body>
+
+<div id="app">
+    <div>{{firstname}}</div>
+</div>
+<script src="./vue.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>-->
+<script>
+    const vm = new Vue({
+        el: '#app',
+        data: {
+            firstname: '王',
+            lastname: '小二'
+        },
+        // 计算属性依赖的值放生变化时才重新执行方法。计算属性要维护一个dirty属性。默认计算属性不会立刻执行。
+        // 计算属性就是一个defineProperty
+        computed: {
+            // defineProperty中的get方法;
+            fullname() {
+                return this.firstname + this.lastname
+            },
+            getFirstname: {
+                get() {
+                    console.log('run')
+                    return this.firstname
+                },
+                set(value) {
+                    console.log(value)
+                }
+            }
+        }
+    })
+    setTimeout(()=>{
+        vm.firstname = 'xxx'
+    }, 1000)
+
+</script>
+</body>
+</html>

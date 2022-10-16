@@ -224,11 +224,10 @@
     _createClass(Watch, [{
       key: "get",
       value: function get() {
-        Dep.target = this; // 静态属性就一份
-
+        pushTarget(this);
         this.getter(); //回去vm上取值, vm._update(vm._render)
 
-        Dep.target = null;
+        popTarget();
       } // 一个组件 对应着多个属性。重复的属性也不用记录。
 
     }, {
@@ -289,8 +288,12 @@
         pending = true;
       }
     }
-  } // nextTick并不是创建一个异步任务，而是将这个任务维护到了队列中去。
-  // 使用p处理，解决多次使用nextTick只执行一次的问题。
+  }
+  /**
+      nextTick实现方式
+  */
+  // nextTick并不是创建一个异步任务，而是将这个任务维护到了队列中去。
+  // 使用p处理，使多次使用nextTick而执行一次。
 
 
   var callbacks = [];
@@ -380,11 +383,20 @@
     }]);
 
     return Dep;
-  }(); // 静态属性。只有一个。
-  // 记录的是wathcer
+  }(); // 静态属性。
+  // 记录的是wathcer， 先把它维护成栈
 
 
   Dep.target = null;
+  var stack = [];
+  function pushTarget(watcher) {
+    stack.push(watcher);
+    Dep.target = watcher;
+  }
+  function popTarget() {
+    stack.pop();
+    Dep.target = stack[stack.length - 1];
+  }
 
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
@@ -505,6 +517,10 @@
 
     if (option.data) {
       initData(vm);
+    }
+
+    if (option.computed) {
+      initComputed(vm);
     }
   }
 
@@ -977,7 +993,7 @@
 
       vm.$options = mergeOptions(this.constructor.options, options); // 生命周期beforeCreate
 
-      callHook(vm, 'beforeCreate'); // 初始化状态,挂载数据
+      callHook(vm, 'beforeCreate'); // 初始化状态,挂载数据,计算属性。
 
       initState(vm);
       callHook(vm, 'created');

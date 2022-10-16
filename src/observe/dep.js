@@ -1,4 +1,4 @@
-import Watch from "./watcher"
+import Watch from './watcher'
 
 let id = 0
 // dep用来收集watcher，而且，dep和watcher是多对多的关系。
@@ -23,11 +23,20 @@ class Dep {
 
   // 通知更新, 告诉watcher，去更新视图
   notify() {
-    this.subs.forEach(item => item.update())
+    this.subs.forEach((item) => item.update())
   }
 }
-// 静态属性。只有一个。
-// 记录的是wathcer
+// 静态属性。
+// 记录的是wathcer， 先把它维护成栈
 Dep.target = null
+let stack = []
+export function pushTarget(watcher) {
+  stack.push(watcher)
+  Dep.target = watcher
+}
+export function popTarget() {
+  stack.pop()
+  Dep.target = stack[stack.length - 1]
+}
 
 export default Dep
