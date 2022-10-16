@@ -5,13 +5,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Document</title>
-
 </head>
 
 <body>
 
 <div id="app">
-    <div>{{firstname}}</div>
+    {{fullname}}---{{fullname}}---{{fullname}}
 </div>
 <script src="./vue.js"></script>
 <!--<script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>-->
@@ -24,20 +23,23 @@
         },
         // 计算属性依赖的值放生变化时才重新执行方法。计算属性要维护一个dirty属性。默认计算属性不会立刻执行。
         // 计算属性就是一个defineProperty
+        // 计算属性同时也是一个watcher，默认渲染会创建一个渲染watcher
+        // 底层就是一个带有dirty属性的watcher
         computed: {
             // defineProperty中的get方法;
             fullname() {
+                console.log("run computed")
                 return this.firstname + this.lastname
             },
-            getFirstname: {
-                get() {
-                    console.log('run')
-                    return this.firstname
-                },
-                set(value) {
-                    console.log(value)
-                }
-            }
+            // fullname: {
+            //     get() {
+            //         console.log('run')
+            //         return this.firstname
+            //     },
+            //     set(value) {
+            //         console.log(value)
+            //     }
+            // }
         }
     })
     setTimeout(()=>{

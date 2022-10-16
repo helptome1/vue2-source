@@ -1,4 +1,4 @@
-import Dep, {popTarget, pushTarget} from './dep'
+import Dep, { popTarget, pushTarget } from './dep'
 
 let id = 0
 
@@ -9,31 +9,55 @@ class Watch {
     this.id = id++
     this.renderWatcher = options
     this.getter = fn
-    this.dep = [] //后续实现计算属性，和一些清理工作时使用。记住dep
+    this.deps = [] //后续实现计算属性，和一些清理工作时使用。记住dep
     this.depsId = new Set()
-    this.get()
+    this.lazy = options.lazy
+    this.dirty = this.lazy // 缓存值
+    this.vm = vm
+    this.lazy ? undefined : this.get()
+  }
+  // 用户获取computed计算后的值
+  evaluate() {
+    this.value = this.get()
+    this.dirty = false
   }
 
   get() {
-      pushTarget(this)
-      this.getter() //回去vm上取值, vm._update(vm._render)
-      popTarget()
+    pushTarget(this) // 静态属性只有一份
+    // 回去vm上取值, 渲染函数vm._update(vm._render)或者计算属性的方法，
+    // 这里用call来执行函数是因为this可能为空
+    let value = this.getter.call(this.vm)
+    popTarget() // watcher已经记住了dep了，而且去重了，此时让dep也记住watcher.
+    return value
   }
 
   // 一个组件 对应着多个属性。重复的属性也不用记录。
   addDep(dep) {
     let id = dep.id
     if (!this.depsId.has(id)) {
-      this.dep.push(id)
+      this.deps.push(dep)
       this.depsId.add(id)
       dep.addSub(this) // watcher已经记住了dep，而且去重复了，可以让dep记住了watcher
     }
   }
 
+  depend() {
+    let i = this.deps.length
+    while (i--) {
+      // dep.depend()
+      this.deps[i].depend() // 让计算属性watcher，也收集渲染watcher.
+    }
+  }
+
   // 更新视图
   update() {
-    // this.get() //更新渲染
-    queueWatcher(this)
+    if (this.lazy) {
+      // 计算属性依赖的值发生了变化，就标识计算属性是脏值（旧值）
+      this.dirty = true
+    } else {
+      // 更新渲染
+      queueWatcher(this)
+    }
   }
 
   run() {
@@ -70,7 +94,6 @@ function queueWatcher(watcher) {
     }
   }
 }
-
 
 /**
     nextTick实现方式

@@ -158,53 +158,6 @@
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  // 获取 数组的原型
-  var oldArrayProto = Array.prototype; // 拷贝一份数组原型，修改数组方法，不会影响Array的方法。
-
-  var newArrayProto = Object.create(oldArrayProto); // 这里是改变元素组的方法。
-
-  var methods = ['push', 'pop', 'shift', 'unshift', 'reverse', 'sort', 'splice'];
-  methods.forEach(function (method) {
-    newArrayProto[method] = function () {
-      var _oldArrayProto$method;
-
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
-      // 这里重写了数组的方法。
-      // 调用原型上的方法。
-      // 这里的this指向的是谁调用的，this指向arr
-      var result = (_oldArrayProto$method = oldArrayProto[method]).call.apply(_oldArrayProto$method, [this].concat(args)); // 需要对新增的数据再次劫持。
-
-
-      var inserted;
-      var ob = this.__ob__;
-
-      switch (method) {
-        case 'push':
-          break;
-
-        case 'unshift':
-          inserted = args;
-          break;
-
-        case 'splice':
-          inserted = args.slice(2);
-          break;
-      }
-
-      if (inserted) {
-        // 对新增的数组内容再次劫持
-        ob.observeArray(inserted);
-      } // 数组变化了，通知对应的wathcer实现更新逻辑
-
-
-      ob.dep.notify();
-      return result;
-    };
-  });
-
   var id$1 = 0; // 观察者，观察某个属性的变化。每个属性都有一个dep(被观察者)，watcher就是观察者。属性变化会通知观察者更新。
   // 1. 不同的组件有不同的watcher。 目前只有一个，渲染跟实例
 
@@ -215,19 +168,34 @@
       this.id = id$1++;
       this.renderWatcher = options;
       this.getter = fn;
-      this.dep = []; //后续实现计算属性，和一些清理工作时使用。记住dep
+      this.deps = []; //后续实现计算属性，和一些清理工作时使用。记住dep
 
       this.depsId = new Set();
-      this.get();
-    }
+      this.lazy = options.lazy;
+      this.dirty = this.lazy; // 缓存值
+
+      this.vm = vm;
+      this.lazy ? undefined : this.get();
+    } // 用户获取computed计算后的值
+
 
     _createClass(Watch, [{
+      key: "evaluate",
+      value: function evaluate() {
+        this.value = this.get();
+        this.dirty = false;
+      }
+    }, {
       key: "get",
       value: function get() {
-        pushTarget(this);
-        this.getter(); //回去vm上取值, vm._update(vm._render)
+        pushTarget(this); // 静态属性只有一份
+        // 回去vm上取值, 渲染函数vm._update(vm._render)或者计算属性的方法，
+        // 这里用call来执行函数是因为this可能为空
 
-        popTarget();
+        var value = this.getter.call(this.vm);
+        popTarget(); // watcher已经记住了dep了，而且去重了，此时让dep也记住watcher.
+
+        return value;
       } // 一个组件 对应着多个属性。重复的属性也不用记录。
 
     }, {
@@ -236,17 +204,32 @@
         var id = dep.id;
 
         if (!this.depsId.has(id)) {
-          this.dep.push(id);
+          this.deps.push(dep);
           this.depsId.add(id);
           dep.addSub(this); // watcher已经记住了dep，而且去重复了，可以让dep记住了watcher
+        }
+      }
+    }, {
+      key: "depend",
+      value: function depend() {
+        var i = this.deps.length;
+
+        while (i--) {
+          // dep.depend()
+          this.deps[i].depend(); // 让计算属性watcher，也收集渲染watcher.
         }
       } // 更新视图
 
     }, {
       key: "update",
       value: function update() {
-        // this.get() //更新渲染
-        queueWatcher(this);
+        if (this.lazy) {
+          // 计算属性依赖的值发生了变化，就标识计算属性是脏值（旧值）
+          this.dirty = true;
+        } else {
+          // 更新渲染
+          queueWatcher(this);
+        }
       }
     }, {
       key: "run",
@@ -398,6 +381,53 @@
     Dep.target = stack[stack.length - 1];
   }
 
+  // 获取 数组的原型
+  var oldArrayProto = Array.prototype; // 拷贝一份数组原型，修改数组方法，不会影响Array的方法。
+
+  var newArrayProto = Object.create(oldArrayProto); // 这里是改变元素组的方法。
+
+  var methods = ['push', 'pop', 'shift', 'unshift', 'reverse', 'sort', 'splice'];
+  methods.forEach(function (method) {
+    newArrayProto[method] = function () {
+      var _oldArrayProto$method;
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      // 这里重写了数组的方法。
+      // 调用原型上的方法。
+      // 这里的this指向的是谁调用的，this指向arr
+      var result = (_oldArrayProto$method = oldArrayProto[method]).call.apply(_oldArrayProto$method, [this].concat(args)); // 需要对新增的数据再次劫持。
+
+
+      var inserted;
+      var ob = this.__ob__;
+
+      switch (method) {
+        case 'push':
+          break;
+
+        case 'unshift':
+          inserted = args;
+          break;
+
+        case 'splice':
+          inserted = args.slice(2);
+          break;
+      }
+
+      if (inserted) {
+        // 对新增的数组内容再次劫持
+        ob.observeArray(inserted);
+      } // 数组变化了，通知对应的wathcer实现更新逻辑
+
+
+      ob.dep.notify();
+      return result;
+    };
+  });
+
   var Observe = /*#__PURE__*/function () {
     function Observe(data) {
       _classCallCheck(this, Observe);
@@ -536,7 +566,7 @@
         }
       });
     });
-  } // 
+  } // 初始化data
 
 
   function initData(vm) {
@@ -549,6 +579,56 @@
     observe(data); // 3. 将vm._data中的数据都挂载到vm上,用vm来代理
 
     proxy(vm, '_data');
+  }
+
+  function initComputed(vm) {
+    var computeds = vm.$options.computed; // 将计算属性保存到vm上，方便后续执行。
+
+    var watchers = vm._computedWatchers = {};
+
+    for (var key in computeds) {
+      var userDef = computeds[key]; // 我们需要监控 计算属性中get的变化。
+
+      var fn = typeof userDef === 'function' ? userDef : userDef.get; // lazy是暂时不执行fn方法, 再将key和wathcer对应起来。
+
+      watchers[key] = new Watch(vm, fn, {
+        lazy: true
+      });
+      defineComputed(vm, key, userDef);
+    }
+  }
+
+  function defineComputed(target, key, userDef) {
+    // 获取getter或者setter
+    // const getter = typeof userDef === 'function' ? userDef : userDef.get
+    var setter = userDef.set || function () {}; // 通过实例拿到对应的属性。
+    // 为了让计算属性在使用时再去执行，执行的fn要写在get函数中。
+
+
+    Object.defineProperty(target, key, {
+      get: createComputedGetter(key),
+      set: setter
+    });
+  }
+
+  function createComputedGetter(key) {
+    // 需要检测是否执行这个getter
+    return function () {
+      // this指向的是vm
+      var watcher = this._computedWatchers[key];
+
+      if (watcher.dirty) {
+        // 如果是脏的就去执行computed计算属性，用户传入的计算属性
+        watcher.evaluate(); // 求值后把dirty变为false，下次就不会执行了。
+      }
+
+      if (Dep.target) {
+        watcher.depend();
+      } // 返回计算属性求得的值。
+
+
+      return watcher.value;
+    };
   }
 
   // Regular Expressions for parsing tags and attributes
