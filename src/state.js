@@ -8,9 +8,37 @@ export function initState(vm) {
   if (option.data) {
     initData(vm)
   }
+  // 如果用户vue({computed: {}}), 有computed属性。就执行initComputed
   if (option.computed) {
     initComputed(vm)
   }
+  // 如果用户vue({watch: {}}), 有watch属性。就执行initWatch
+  if (option.watch) {
+    initWatch(vm)
+  }
+}
+
+function initWatch(vm) {
+  const watch = vm.$options.watch
+  for (let key in watch) {
+    const handler = watch[key]
+    // 如果用户传递的是数组，就循环执行。
+    if (Array.isArray(handler)) {
+      handler.forEach((handle) => {
+        createWatcher(vm, key, handle)
+      })
+    } else {
+      createWatcher(vm, key, handler)
+    }
+  }
+}
+
+function createWatcher(vm, key, handler) {
+  // handler可能是字符串或者函数.如果是字符串，就是methods中的方法。
+  if (typeof handler === 'string') {
+    handler = vm[handler]
+  }
+  return vm.$watch(key, handler)
 }
 
 function proxy(vm, target) {
@@ -57,6 +85,7 @@ function initComputed(vm) {
     defineComputed(vm, key, userDef)
   }
 }
+
 function defineComputed(target, key, userDef) {
   // 获取getter或者setter
   // const getter = typeof userDef === 'function' ? userDef : userDef.get
@@ -74,11 +103,11 @@ function createComputedGetter(key) {
   return function () {
     // this指向的是vm
     const watcher = this._computedWatchers[key]
-    if(watcher.dirty) {
+    if (watcher.dirty) {
       // 如果是脏的就去执行computed计算属性，用户传入的计算属性
-      watcher.evaluate(); // 求值后把dirty变为false，下次就不会执行了。
+      watcher.evaluate() // 求值后把dirty变为false，下次就不会执行了。
     }
-    if(Dep.target) {
+    if (Dep.target) {
       watcher.depend()
     }
     // 返回计算属性求得的值。

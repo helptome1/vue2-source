@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div id="app">{{firstname}}</div>
+    <script src="./vue.js"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/vue@2.7.10"></script>-->
+    <script>
+      const vm = new Vue({
+        el: '#app',
+        data: {
+          firstname: '王',
+          lastname: '小二'
+        },
+        methods: {
+          firstname(newVal, oldVal) {
+            console.log(newVal, oldVal)
+          }
+        },
+        // 1.watch可以写成数组形式, 并且数组可以也可以是某个方法名，也可以直接写个方法名字符串。也可以写成对象形式。
+        // 2. 但是最终都会转换成下面第二种写法的方式进行执行。
+        watch: {
+          firstname(newValue, oldValue) {
+            console.log(newValue, oldValue)
+          }
+          // firstname: [
+          //   (newValue, oldValue) => {
+          //     console.log(newValue, oldValue)
+          //   },
+          //   'firstname',
+          //   (newValue, oldValue) => {
+          //     console.log(newValue, oldValue)
+          //   }
+          // ]
+        }
+      })
+
+      // 2. 第二种写法
+      // vm.$watch('firstname', (newValue, oldValue) => {
+      //   console.log(newValue, oldValue)
+      // })
+      vm.$watch('firstname', (newValue, oldValue) => {
+        console.log(newValue, oldValue)
+      })
+
+      setTimeout(() => {
+        vm.firstname = '何'
+      }, 1000)
+    </script>
+  </body>
+</html>

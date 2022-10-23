@@ -162,12 +162,20 @@
   // 1. 不同的组件有不同的watcher。 目前只有一个，渲染跟实例
 
   var Watch = /*#__PURE__*/function () {
-    function Watch(vm, fn, options) {
+    function Watch(vm, exprOrFn, options, cb) {
       _classCallCheck(this, Watch);
 
       this.id = id$1++;
       this.renderWatcher = options;
-      this.getter = fn;
+
+      if (typeof exprOrFn === 'string') {
+        this.getter = function () {
+          return vm[exprOrFn];
+        };
+      } else {
+        this.getter = exprOrFn;
+      }
+
       this.deps = []; //后续实现计算属性，和一些清理工作时使用。记住dep
 
       this.depsId = new Set();
@@ -175,7 +183,10 @@
       this.dirty = this.lazy; // 缓存值
 
       this.vm = vm;
-      this.lazy ? undefined : this.get();
+      this.cb = cb;
+      this.user = options.user; // 标识是否是用户自己的watcher
+
+      this.value = this.lazy ? undefined : this.get();
     } // 用户获取computed计算后的值
 
 
@@ -234,7 +245,12 @@
     }, {
       key: "run",
       value: function run() {
-        this.get(); // 执行刷新
+        var oldValue = this.value;
+        var newValue = this.get(); // 执行刷新
+
+        if (this.user) {
+          this.cb.call(this.vm, newValue, oldValue);
+        }
       }
     }]);
 
@@ -547,11 +563,46 @@
 
     if (option.data) {
       initData(vm);
-    }
+    } // 如果用户vue({computed: {}}), 有computed属性。就执行initComputed
+
 
     if (option.computed) {
       initComputed(vm);
+    } // 如果用户vue({watch: {}}), 有watch属性。就执行initWatch
+
+
+    if (option.watch) {
+      initWatch(vm);
     }
+  }
+
+  function initWatch(vm) {
+    var watch = vm.$options.watch;
+
+    var _loop = function _loop(key) {
+      var handler = watch[key]; // 如果用户传递的是数组，就循环执行。
+
+      if (Array.isArray(handler)) {
+        handler.forEach(function (handle) {
+          createWatcher(vm, key, handle);
+        });
+      } else {
+        createWatcher(vm, key, handler);
+      }
+    };
+
+    for (var key in watch) {
+      _loop(key);
+    }
+  }
+
+  function createWatcher(vm, key, handler) {
+    // handler可能是字符串或者函数.如果是字符串，就是methods中的方法。
+    if (typeof handler === 'string') {
+      handler = vm[handler];
+    }
+
+    return vm.$watch(key, handler);
   }
 
   function proxy(vm, target) {
@@ -1128,6 +1179,12 @@
 
   initLifeCycle(Vue);
   initGlobalAPI(Vue); // 初始化api——mixin
+
+  Vue.prototype.$watch = function (expOrFn, cb) {
+    new Watch(this, expOrFn, {
+      user: true
+    }, cb);
+  };
 
   return Vue;
 

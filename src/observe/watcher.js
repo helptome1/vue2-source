@@ -5,16 +5,24 @@ let id = 0
 // 观察者，观察某个属性的变化。每个属性都有一个dep(被观察者)，watcher就是观察者。属性变化会通知观察者更新。
 // 1. 不同的组件有不同的watcher。 目前只有一个，渲染跟实例
 class Watch {
-  constructor(vm, fn, options) {
+  constructor(vm, exprOrFn, options, cb) {
     this.id = id++
     this.renderWatcher = options
-    this.getter = fn
+    if(typeof exprOrFn === 'string') {
+      this.getter = function () {
+        return vm[exprOrFn]
+      }
+    } else {
+      this.getter = exprOrFn
+    }
     this.deps = [] //后续实现计算属性，和一些清理工作时使用。记住dep
     this.depsId = new Set()
     this.lazy = options.lazy
     this.dirty = this.lazy // 缓存值
     this.vm = vm
-    this.lazy ? undefined : this.get()
+    this.cb = cb
+    this.user = options.user // 标识是否是用户自己的watcher
+    this.value = this.lazy ? undefined : this.get()
   }
   // 用户获取computed计算后的值
   evaluate() {
@@ -61,8 +69,12 @@ class Watch {
   }
 
   run() {
-    this.get() // 执行刷新
-  }
+    let oldValue = this.value
+    let newValue = this.get() // 执行刷新
+    if(this.user) {
+      this.cb.call(this.vm, newValue, oldValue)
+    }
+   }
 }
 
 // 以下代码用来，更新数据的时候，等到最后修改完，只刷新一次节约性能。
