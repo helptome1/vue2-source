@@ -1,57 +1,7 @@
 import Watch from './observe/watcher'
 import { createElementVNode, createTextVNode } from './vdom'
+import { patch } from './vdom/patch'
 
-// 创建真实的dom
-function createElm(vnode) {
-  let { tag, data, children, text } = vnode
-  if (typeof tag === 'string') {
-    //tag如果是标签
-    // 这里把虚拟节点和真实节点联系起来。
-    vnode.el = document.createElement(tag)
-    // 更新data中的数据
-    patchProps(vnode.el, data)
-    // 如果有children，就使用递归来循环创建children里面的内容
-    children.forEach((child) => {
-      vnode.el.appendChild(createElm(child))
-    })
-  } else {
-    // 如果是文本
-    vnode.el = document.createTextNode(text)
-  }
-  return vnode.el
-}
-
-function patchProps(el, props) {
-  for (let key in props) {
-    if (key === 'style') {
-      // style: {color: 'red'}
-      for (let styleName in props.style) {
-        el.style[styleName] = props.style[styleName]
-      }
-    } else {
-      el.setAttribute(key, props[key])
-    }
-  }
-}
-/**
- * 用于更新dom节点
- * @param {*} oldVnode 旧的dom节点
- * @param {*} vnode 新的dom节点
- */
-function patch(oldVnode, vnode) {
-  // 写的是初渲染流程
-  const isRealElement = oldVnode.nodeType
-  if (isRealElement) {
-    const elm = oldVnode
-    const parentElm = elm.parentNode //拿到父级元素。==> body
-    const newEle = createElm(vnode)
-    parentElm.insertBefore(newEle, elm.nextSibing)
-    parentElm.removeChild(elm)
-    return newEle
-  } else {
-    // todo: diff算法
-  }
-}
 /**
  * 但是现在有个问题，就是每次更新数据都需要手动的去执行_update和_render函数。
  * 为了解决这一问题，引入了观察者模式。为了节约性能，引入了diff算法。

@@ -27,3 +27,8 @@ function vNode(vm, tag, key, data, children, text) {
     // 事件，插槽，等等一系列
   }
 }
+
+// 判断两个节点是否是同一个
+export function isSameVnode(oldVnode, newVnode) {
+  return newVnode.tag === oldVnode.tag && newVnode.key === oldVnode.key
+}

@@ -1,6 +1,6 @@
 import Dep from './observe/dep'
 import { observe } from './observe/index'
-import Watch from './observe/watcher'
+import Watch, { nextTick } from './observe/watcher'
 
 export function initState(vm) {
   const option = vm.$options
@@ -112,5 +112,12 @@ function createComputedGetter(key) {
     }
     // 返回计算属性求得的值。
     return watcher.value
+  }
+}
+
+export function initStateMixin(Vue) {
+  Vue.prototype.$nextTick = nextTick
+  Vue.prototype.$watch = function (expOrFn, cb) {
+    new Watch(this, expOrFn, { user: true }, cb)
   }
 }
