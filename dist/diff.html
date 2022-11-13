@@ -7,13 +7,34 @@
     <title>Document</title>
   </head>
   <body>
+    <!-- <div id="app">
+      <li v-for="a in arr">
+        {{a}} <input type="checkbox">
+      </li>
+      <button @click="append"> 追加</button>
+    </div> -->
     <script src="./vue.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10/dist/vue.js"></script> -->
     <script>
       // 1. 实现diff算法
-      // 在之前的更新中每次更新，都会产生新的虚拟dom节点，通过新的虚拟节点生成新的真实节点，替换老的真实节点  
+      // 在之前的更新中每次更新，都会产生新的虚拟dom节点，通过新的虚拟节点生成新的真实节点，替换老的真实节点
       // 第一次渲染的时候，会产生一个虚拟节点。第二次更新我们也会调用render方法，产生新的虚拟节点。
       // 比对出需要更新的节点，然后更新
       // 2. 组件渲染原理
+
+      // let vm = new Vue({
+      //   el: '#app',
+      //   data() {
+      //     return {
+      //       arr: [1, 2, 3, 5]
+      //     }
+      //   },
+      //   methods: {
+      //     append() {
+      //       this.arr.unshift(5)
+      //     }
+      //   }
+      // })
     </script>
   </body>
 </html>
