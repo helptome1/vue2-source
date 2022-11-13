@@ -23,6 +23,18 @@ LIFECYCLE.forEach((hook) => {
     }
   }
 })
+
+strats.components = function (parentVal, childVal) {
+  // 组件的合并策略
+  const res = Object.create(parentVal)
+  if (childVal) {
+    for (let key in childVal) {
+      res[key] = childVal[key] // 返回的是构造函数的
+    }
+  }
+  return res
+}
+
 export function mergeOptions(parent, child) {
   const options = {}
   for (let key in parent) {

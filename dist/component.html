@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- <div id="app"></div> -->
+    <div id="root"></div>
+    <script src="./vue.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.7.10/dist/vue.js"></script> -->
+    <script>
+      // 1. 根实例
+      // const vm = new Vue({
+      //   el: '#app',
+      //   data() {
+      //     return {
+      //       name: 'hzg'
+      //     }
+      //   }
+      // })
+      // setTimeout(() => {
+      //   vm.name = 'haha'
+      // }, 1000)
+      // 创建构造器
+      const Profile = Vue.extend({
+        template: '<p> aka</p>',
+      })
+      // 创建 Profile 实例，并挂载到一个元素上。
+      new Profile().$mount('#root')
+    </script>
+  </body>
+</html>

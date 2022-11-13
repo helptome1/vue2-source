@@ -28,6 +28,20 @@
       }
     };
   });
+
+  strats.components = function (parentVal, childVal) {
+    // 组件的合并策略
+    var res = Object.create(parentVal);
+
+    if (childVal) {
+      for (var key in childVal) {
+        res[key] = childVal[key]; // 返回的是构造函数的
+      }
+    }
+
+    return res;
+  };
+
   function mergeOptions(parent, child) {
     var options = {};
 
@@ -54,13 +68,44 @@
   }
 
   function initGlobalAPI(Vue) {
-    Vue.options = {};
+    Vue.options = {
+      _base: Vue
+    };
 
     Vue.mixin = function (mixin) {
       // debugger
       // 把用户选项和全局的options合并
       this.options = mergeOptions(this.options, mixin);
       return this;
+    }; // 可以手动创建一个组件的构造函数，可以手动创建一组件进行挂载。
+
+
+    Vue.extend = function (options) {
+      // 根据用户的参数返回一个构造函数。
+      function Sub() {
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        // 默认对子类进行初始化操作
+        this._init(options);
+      } // 继承Vue的原型 等于 Sub.prototype.__proto__ = Vue.prototype
+
+
+      Sub.prototype = Object.create(Vue.prototype);
+      Sub.prototype.constructor = Sub; // 将用户传递的参数和全局的参数进行合并。
+
+      Sub.options = mergeOptions(Vue.options, options);
+      Sub.options = options;
+      return Sub;
+    }; // 全局的指令， Vue.options.directives
+
+
+    Vue.options.components = {};
+
+    Vue.component = function (id, definition) {
+      // 如果definition是一个对象，就是一个组件的定义，如果是一个函数，就是一个组件的构造函数(说明用户自己调用了Vue.extend)。
+      definition = typeof definition === 'function' ? definition : Vue.extend(definition); // 2.注册组件
+
+      Vue.options.components[id] = definition;
     };
   }
 
@@ -955,6 +1000,10 @@
   }
 
   // h()  _C()都是这个方法
+  var isReservedTag = function isReservedTag(tag) {
+    return ['a', 'div', 'p', 'ul', 'li', 'span', 'button', 'input', 'br', 'ol'].includes(tag);
+  };
+
   function createElementVNode(vm, tag) {
     var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
@@ -965,26 +1014,45 @@
     var key = data.key;
     !!key && delete data.key;
 
-    for (var _len = arguments.length, chidren = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
-      chidren[_key - 3] = arguments[_key];
+    if (isReservedTag(tag)) {
+      return vNode(vm, tag, key, data, children);
+    } else {
+      // Ctor就是组件的定义， 可能是一个sub类，也可能是一个组件的obj选项。
+      var Ctor = vm.$options.components[tag];
+      return createComponent(vm, tag, data, key, children, Ctor);
+    }
+  }
+
+  function createComponent(vm, tag, data, key, children, Ctor) {
+    if (_typeof(Ctor) === 'object') {
+      Ctor = vm.$options._base.extend(Ctor);
     }
 
-    return vNode(vm, tag, key, data, chidren);
+    data.hook = {
+      // 稍后调用组件真实节点的时候， 如果是组件则调用此init方法。
+      init: function init(vnode) {}
+    };
+    return vNode(vm, tag, key, children, null, {
+      Ctor: Ctor
+    });
   } // _v();
+
 
   function createTextVNode(vm, text) {
     return vNode(vm, undefined, undefined, undefined, undefined, text);
   } // ast做的是语法层面的转换，它描述的是语法本身；（可以描述js，css，html）
   // 而vNode的虚拟dom是描述dom的元素，可以增加一些自定义属性。（只描述dom元素）
 
-  function vNode(vm, tag, key, data, children, text) {
+  function vNode(vm, tag, key, data, children, text, componentOptions) {
     return {
       vm: vm,
       tag: tag,
       key: key,
       data: data,
       children: children,
-      text: text // 事件，插槽，等等一系列
+      text: text,
+      componentOptions: componentOptions // 包含组件的构造函数
+      // 事件，插槽，等等一系列
 
     };
   } // 判断两个节点是否是同一个
