@@ -13,8 +13,17 @@ export function initLifeCycle(Vue) {
     // 将虚拟dom转换为真实dom
     const vm = this
     const el = vm.$el
-    // patch既有初始化的功能，又更新新的值
-    vm.$el = patch(el, vnode)
+
+    // 用来判断是否是第一次渲染
+    const preVnode = vm._vnode
+    vm._vnode = vnode // 把组件第一次产生的虚拟节点保存到_vnode上
+    if (preVnode) {
+      // 更新, 这里的patch是一个递归的过程，会将虚拟dom转换为真实dom
+      patch(preVnode, vnode)
+    } else {
+      // 第一次渲染
+      vm.$el = patch(el, vnode)
+    }
   }
 
   /**
