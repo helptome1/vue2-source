@@ -1019,18 +1019,22 @@
     } else {
       // Ctor就是组件的定义， 可能是一个sub类，也可能是一个组件的obj选项。
       var Ctor = vm.$options.components[tag];
-      return createComponent(vm, tag, data, key, children, Ctor);
+      return createComponent$1(vm, tag, data, key, children, Ctor);
     }
   }
 
-  function createComponent(vm, tag, data, key, children, Ctor) {
+  function createComponent$1(vm, tag, data, key, children, Ctor) {
     if (_typeof(Ctor) === 'object') {
       Ctor = vm.$options._base.extend(Ctor);
     }
 
     data.hook = {
       // 稍后调用组件真实节点的时候， 如果是组件则调用此init方法。
-      init: function init(vnode) {}
+      init: function init(vnode) {
+        // 保存组件的实例到虚拟节点上。
+        var instance = vnode.componentInstance = new vnode.componentOptions.Ctor();
+        instance.$mount();
+      }
     };
     return vNode(vm, tag, key, children, null, {
       Ctor: Ctor
@@ -1062,15 +1066,32 @@
     return newVnode.tag === oldVnode.tag && newVnode.key === oldVnode.key;
   }
 
+  function createComponent(vnode) {
+    var i = vnode.data;
+
+    if ((i = i.hook) && (i = i.init)) {
+      i(vnode); // 调用init方法，初始化组件
+    }
+
+    if (vnode.componentInstance) {
+      return true; // 说明是组件。
+    }
+  } // 创建真实的dom，将虚拟节点变成真实的节点。
+
+
   function createElm(vnode) {
     var tag = vnode.tag,
         data = vnode.data,
         children = vnode.children,
-        text = vnode.text;
+        text = vnode.text; //tag如果是标签
 
     if (typeof tag === 'string') {
-      //tag如果是标签
-      // 这里把虚拟节点和真实节点联系起来。
+      // 创建元素时需要判断是否是组件，如果是组件，需要返回组件的真实节点。
+      if (createComponent(vnode)) {
+        return vnode.componentInstance.$el;
+      } // 这里把虚拟节点和真实节点联系起来。
+
+
       vnode.el = document.createElement(tag); // 更新data中的属性。
 
       patchProps(vnode.el, {}, data); // 如果有children，就使用递归来循环创建children里面的内容
@@ -1131,7 +1152,12 @@
    */
 
   function patch(oldVnode, vnode) {
-    // 写的是初渲染流程
+    // 判断oldVnode是不是虚拟节点，如果不是，就是真实节点。
+    if (!oldVnode) {
+      return createElm(vnode);
+    } // 写的是初渲染流程
+
+
     var isRealElement = oldVnode.nodeType;
 
     if (isRealElement) {
@@ -1428,9 +1454,7 @@
         if (!options.template && el) {
           template = el.outerHTML;
         } else {
-          if (el) {
-            template = options.template; //如果有el采用模板、
-          }
+          template = options.template; //如果有el采用模板、
         } // 如果写了template就需要对模板进行编译，最终生成一个render函数。
 
 

@@ -1,10 +1,24 @@
 import { isSameVnode } from './index'
 
+function createComponent(vnode) {
+  let i = vnode.data
+  if ((i = i.hook) && (i = i.init)) {
+    i(vnode) // 调用init方法，初始化组件
+  }
+  if (vnode.componentInstance) {
+    return true // 说明是组件。
+  }
+}
+
 // 创建真实的dom，将虚拟节点变成真实的节点。
 export function createElm(vnode) {
   let { tag, data, children, text } = vnode
+  //tag如果是标签
   if (typeof tag === 'string') {
-    //tag如果是标签
+    // 创建元素时需要判断是否是组件，如果是组件，需要返回组件的真实节点。
+    if(createComponent(vnode)) {
+      return vnode.componentInstance.$el
+    }
     // 这里把虚拟节点和真实节点联系起来。
     vnode.el = document.createElement(tag)
     // 更新data中的属性。
@@ -60,6 +74,11 @@ export function patchProps(el, oldProps = {}, props = {}) {
  * @param {*} vnode 新的dom节点
  */
 export function patch(oldVnode, vnode) {
+  // 判断oldVnode是不是虚拟节点，如果不是，就是真实节点。
+  if (!oldVnode) {
+    return createElm(vnode)
+  }
+
   // 写的是初渲染流程
   const isRealElement = oldVnode.nodeType
   if (isRealElement) {
@@ -217,12 +236,12 @@ function updateChildren(el, oldChildren, newChildren) {
       let anchor = newChildren[newEndIndex + 1] ? newChildren[newEndIndex + 1].el : null // 获取下一个节点。
       // 需要理解的一点是anchor为空时，insetBefore会自动插入到最后。
       el.insertBefore(childEle, anchor)
-    } 
+    }
   }
   // 2. 如果新的节点比旧的节点短，就将旧的多余的节点删除。
   if (oldStartIndex <= oldEndIndex) {
     for (let i = oldStartIndex; i <= oldEndIndex; i++) {
-      if(oldChildren[i] !== undefined) {
+      if (oldChildren[i] !== undefined) {
         el.removeChild(oldChildren[i].el)
       }
     }

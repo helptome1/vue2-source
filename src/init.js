@@ -39,9 +39,7 @@ export function initMixin(Vue) {
       if (!options.template && el) {
         template = el.outerHTML
       } else {
-        if (el) {
           template = options.template //如果有el采用模板、
-        }
       }
       // 如果写了template就需要对模板进行编译，最终生成一个render函数。
       if (template) {

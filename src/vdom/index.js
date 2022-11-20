@@ -26,7 +26,11 @@ function createComponent(vm, tag, data, key, children, Ctor) {
   }
   data.hook = {
     // 稍后调用组件真实节点的时候， 如果是组件则调用此init方法。
-    init(vnode) {}
+    init(vnode) {
+      // 保存组件的实例到虚拟节点上。
+      let instance = vnode.componentInstance = new vnode.componentOptions.Ctor
+      instance.$mount();
+    }
   }
   return vNode(vm, tag, key, children, null, { Ctor })
 }
